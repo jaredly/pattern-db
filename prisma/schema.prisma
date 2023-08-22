@@ -15,7 +15,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   password Password?
-  notes    Note[]
+  patterns    Pattern[]
 }
 
 model Password {
@@ -25,14 +25,52 @@ model Password {
   userId String @unique
 }
 
-model Note {
+model Pattern {
   id    String @id @default(cuid())
-  title String
-  body  String
+  notes String?
+
+  // It's a json array of URLs?
+  // Like, might as well, right?
+  // unless I want to do a reverse lookup or something
+  // orrrr wait sorry I need images to have attribution
+  // separate from patterns. That's right.
+  images Image[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  links      Link[]
+  tags Tag[]
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId String
+}
+
+model Image {
+  id    String @id @default(cuid())
+  pattern Pattern @relation(fields: [patternId] ,references: [id], onDelete: Cascade) // for now, only one pattern per image.
+  patternId String
+  location String?
+  source String?
+  url String?
+}
+
+model Link {
+  id       String    @id @default(cuid())
+  kind String // tutorial, general, idk
+  url     String
+  // Many to Many
+  patterns Pattern[]
+
+  @@unique([kind, url])
+}
+
+model Tag {
+  id       String    @id @default(cuid())
+  category String
+  name     String
+  // Many to Many
+  patterns Pattern[]
+
+  @@unique([category, name])
+  @@index([category])
 }
