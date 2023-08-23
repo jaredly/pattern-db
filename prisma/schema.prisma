@@ -51,7 +51,8 @@ model Image {
   patternId String
   location String?
   source String?
-  url String?
+  date String?
+  url String
 }
 
 model Link {

@@ -29,7 +29,8 @@ CREATE TABLE "Image" (
     "patternId" TEXT NOT NULL,
     "location" TEXT,
     "source" TEXT,
-    "url" TEXT,
+    "date" TEXT,
+    "url" TEXT NOT NULL,
     CONSTRAINT "Image_patternId_fkey" FOREIGN KEY ("patternId") REFERENCES "Pattern" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
