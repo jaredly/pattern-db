@@ -1,4 +1,7 @@
 
+- add / rm tags
+
+
 # So, I'm making a db of patterns
 
 I drop an image

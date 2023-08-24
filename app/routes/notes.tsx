@@ -9,7 +9,7 @@ import {
   useLoaderData,
   useSubmit,
 } from "@remix-run/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { prisma } from "~/db.server";
 
 import { getNoteListItems } from "~/models/note.server";
@@ -25,6 +25,39 @@ export const action = async ({ params, request }: ActionArgs) => {
   const formData = await parseMultipartFormData(request, uploadImages);
 
   switch (formData.get("intent")) {
+    case "tags": {
+      console.log([...formData.entries()]);
+      const patterns = formData.getAll("pattern") as string[];
+      const tag = formData.get("tag") as string;
+      const haveTheTag = (
+        await prisma.pattern.findMany({
+          where: { id: { in: patterns }, tags: { some: { id: tag } } },
+          select: { id: true },
+        })
+      ).map((p) => p.id);
+      if (haveTheTag.length === patterns.length) {
+        await Promise.all(
+          patterns.map((id) =>
+            prisma.tag.update({
+              where: { id: tag },
+              data: { patterns: { disconnect: { id } } },
+            })
+          )
+        );
+      } else {
+        await Promise.all(
+          patterns
+            .filter((p) => !haveTheTag.includes(p))
+            .map((id) =>
+              prisma.tag.update({
+                where: { id: tag },
+                data: { patterns: { connect: { id } } },
+              })
+            )
+        );
+      }
+      break;
+    }
     case "tag:new": {
       const name = formData.get("tag") as string;
       const [one, two] = name.split(":");
@@ -90,9 +123,13 @@ export const loader = async ({ request }: LoaderArgs) => {
   });
 };
 
+type PatternSelected = Awaited<
+  ReturnType<Awaited<ReturnType<typeof loader>>["json"]>
+>["patterns"][0];
+
 const lsText = (key: string) => {
   const [value, setValue] = useState("");
-  useLayoutEffect(() => {
+  useEffect(() => {
     setValue(window.localStorage[key]);
   }, []);
   return {
@@ -103,14 +140,42 @@ const lsText = (key: string) => {
   };
 };
 
+const customStyle = `input[type=checkbox]:checked + div {
+    --tw-bg-opacity: 0.8;
+    background-color: rgb(207 216 220 / var(--tw-bg-opacity));
+}
+label:hover > input[type=checkbox]:checked + div {
+    --tw-bg-opacity: 1;
+    background-color: rgb(207 216 220 / var(--tw-bg-opacity));
+}`;
+
 export default function NotesPage() {
   const { patterns, tags, links } = useLoaderData<typeof loader>();
   const form = useRef<HTMLFormElement>(null);
+  const pform = useRef<HTMLFormElement>(null);
   const submit = useSubmit();
   const [check, setCheck] = useState({} as { [key: string]: boolean });
-  const [tagSel, setTagSel] = useState([] as string[]);
+  const [tagSel, setTagSel] = useState({} as { [key: string]: boolean });
+  const map = useMemo(() => {
+    const map: { [key: string]: PatternSelected } = {};
+    patterns.forEach((p) => (map[p.id] = p));
+    return map;
+  }, [patterns]);
 
   useEffect(() => {
+    if (pform.current) {
+      setTagSel(getTagMap(new FormData(pform.current), tags, map));
+    }
+  }, [patterns, tags, map]);
+
+  useEffect(() => {
+    const k = (evt: KeyboardEvent) => {
+      if (evt.key === "Escape") {
+        pform.current!.querySelectorAll("input").forEach((input) => {
+          input.checked = false;
+        });
+      }
+    };
     const paste = (evt: ClipboardEvent) => {
       const files = evt.clipboardData?.files;
       if (files?.length === 1) {
@@ -121,14 +186,23 @@ export default function NotesPage() {
       }
     };
     document.body.addEventListener("paste", paste);
-    return () => document.body.removeEventListener("paste", paste);
+    document.body.addEventListener("keydown", k);
+    return () => {
+      document.body.removeEventListener("paste", paste);
+      document.body.removeEventListener("keydown", k);
+    };
   }, []);
 
   return (
     <div className="flex h-full min-h-screen flex-col">
       <header className="flex items-center justify-between bg-blue-gray-800 p-4 text-white">
         <h1 className="text-3xl font-bold">
-          <Link to=".">Notes</Link>
+          <Link to="." className="px-4">
+            Notes
+          </Link>
+          <Link to="../tags" className="px-4 text-2xl">
+            Tags
+          </Link>
         </h1>
         <Form action="/logout" method="post">
           <button
@@ -174,27 +248,30 @@ export default function NotesPage() {
                 },
               }}
             />
-            <button name="intent" value="tag:new">
+            <button
+              name="intent"
+              value="tag:new"
+              className="p-2 hover:bg-blue-gray-300 rounded"
+            >
               Create Tag
             </button>
           </Form>
-          {tags.map((tag) => (
+          {tags.sort(compareTags).map((tag) => (
             <button
               key={tag.id}
               className={
-                `p-2` + (tagSel.includes(tag.id) ? " bg-blue-gray-400" : "")
+                `p-2 hover:bg-blue-gray-300 rounded mr-1 ` +
+                (tagSel[tag.id]
+                  ? " bg-blue-gray-200"
+                  : tagSel[tag.id] === false
+                  ? " bg-blue-gray-400"
+                  : "")
               }
               name="tag"
+              value={tag.id}
               form="patterns"
-              // onClick={() =>
-              //   setTagSel((ts) =>
-              //     ts.includes(tag.id)
-              //       ? ts.filter((t) => t !== tag.id)
-              //       : [...ts, tag.id]
-              //   )
-              // }
             >
-              {tag.category}:{tag.name}
+              {tag.category ? tag.category + ":" + tag.name : tag.name}
             </button>
           ))}
         </div>
@@ -239,62 +316,24 @@ export default function NotesPage() {
               Upload
             </button>
           </Form>
-          <style>
-            {`
-            input[type=checkbox]:checked + div {
-                --tw-bg-opacity: 0.8;
-                background-color: rgb(207 216 220 / var(--tw-bg-opacity));
-            }
-            label:hover > input[type=checkbox]:checked + div {
-                --tw-bg-opacity: 1;
-                background-color: rgb(207 216 220 / var(--tw-bg-opacity));
-            }
-          `}
-          </style>
+          <style dangerouslySetInnerHTML={{ __html: customStyle }} />
           <Form
             id="patterns"
             method="post"
             className="contents"
             encType="multipart/form-data"
+            ref={pform}
+            onChange={(evt) => {
+              const data = new FormData(evt.currentTarget);
+              setTagSel(getTagMap(data, tags, map));
+            }}
           >
+            <input type="hidden" name="intent" value="tags" />
             {patterns
               .slice()
               .reverse()
               .map((pattern) => (
-                <div key={pattern.id}>
-                  {pattern.images.map((image) => (
-                    <label key={image.id}>
-                      <input
-                        type="checkbox"
-                        name={image.id}
-                        className="hidden"
-                      />
-                      <div
-                        onClick={() =>
-                          setCheck((c) => ({ ...c, [image.id]: !c[image.id] }))
-                        }
-                        className="w-64 hover:z-10 hover:bg-blue-gray-50 transition-colors p-8 cursor-pointer"
-                      >
-                        <Zoomage
-                          src={image.url}
-                          className="w-64 h-64 object-contain bg-black"
-                        />
-                        <div className="h-32 relative">
-                          <div>{image.date}</div>
-                          <div>{image.location}</div>
-                          <div>{image.source}</div>
-                          <div className="absolute bottom-0 left-0 right-0">
-                            {pattern.tags.map((tag) => (
-                              <div key={tag.id}>
-                                {tag.category}:{tag.name}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
+                <Pattern pattern={pattern} key={pattern.id} />
               ))}
           </Form>
         </div>
@@ -332,4 +371,133 @@ const Zoomage = ({ src, className }: { src: string; className?: string }) => {
       }}
     />
   );
+};
+
+function getTagMap(
+  data: FormData,
+  tags: { id: string; category: string; name: string }[],
+  map: {
+    [key: string]: {
+      id: string;
+      notes: string | null;
+      images: {
+        id: string;
+        location: string | null;
+        source: string | null;
+        date: string | null;
+        url: string;
+      }[];
+      links: { id: string; kind: string; url: string }[];
+      tags: { id: string; category: string; name: string }[];
+    };
+  }
+) {
+  const selected = data.getAll("pattern") as string[];
+  const tmap: { [key: string]: boolean } = {};
+  if (selected.length) {
+    tags.forEach(({ id }) => {
+      let got = 0;
+      let not = 0;
+      selected.forEach((pid) => {
+        const found = map[pid].tags.find((t) => t.id === id);
+        if (found) {
+          got++;
+        } else {
+          not++;
+        }
+      });
+      if (got === selected.length) {
+        tmap[id] = true;
+      } else if (not !== selected.length) {
+        tmap[id] = false;
+      }
+    });
+  }
+  return tmap;
+}
+
+function Pattern({ pattern }: { pattern: PatternSelected }) {
+  const [idx, setIdx] = useState(0);
+  const image = pattern.images[idx];
+  if (!image) return null;
+  return (
+    <div key={pattern.id}>
+      <label key={image.id}>
+        <input
+          type="checkbox"
+          name="pattern"
+          value={pattern.id}
+          className="hidden"
+        />
+        <div className="w-64 hover:z-10 hover:bg-blue-gray-50 transition-colors p-8 cursor-pointer">
+          <div className="relative">
+            <Zoomage
+              src={image.url}
+              className="w-64 h-64 object-contain bg-black"
+            />
+            {pattern.images.length > 1 ? (
+              <div className="absolute bottom-0 left-0 right-0">
+                <button
+                  type="button"
+                  className="bg-white"
+                  onClick={() => setIdx(Math.max(0, idx - 1))}
+                >
+                  &lt;-
+                </button>
+                <button
+                  type="button"
+                  className="bg-white"
+                  onClick={() =>
+                    setIdx(Math.min(pattern.images.length - 1, idx + 1))
+                  }
+                >
+                  -&gt;
+                </button>
+              </div>
+            ) : null}
+          </div>
+          <div className="h-32 relative">
+            <div>{image.date}</div>
+            <div>{image.location}</div>
+            <div>{image.source}</div>
+            <div className="absolute bottom-0 left-0 right-0 flex flex-wrap text-xs">
+              {pattern.tags.map((tag) => (
+                <div
+                  key={tag.id}
+                  className="px-1 rounded-sm mr-1 bg-blue-gray-600 text-white mt-1"
+                >
+                  {tag.category ? tag.category + ":" + tag.name : tag.name}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </label>
+      {/* ))} */}
+    </div>
+  );
+}
+
+const compareTags = (
+  one: { name: string; category: string },
+  two: { name: string; category: string }
+) => {
+  if (one.category < two.category) {
+    return -1;
+  }
+  if (two.category < one.category) {
+    return 1;
+  }
+  const onum = one.name.match(/^\d+/);
+  const tnum = two.name.match(/^\d+/);
+  if (onum && !tnum) {
+    return -1;
+  }
+  if (tnum && !onum) {
+    return 1;
+  }
+  if (onum && tnum) {
+    return +onum[0] - +tnum[0];
+  }
+  return one.name < two.name ? -1 : one.name > two.name ? 1 : 0;
 };
