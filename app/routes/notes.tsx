@@ -154,7 +154,7 @@ export default function NotesPage() {
   const form = useRef<HTMLFormElement>(null);
   const pform = useRef<HTMLFormElement>(null);
   const submit = useSubmit();
-  const [check, setCheck] = useState({} as { [key: string]: boolean });
+  //   const [check, setCheck] = useState({} as { [key: string]: boolean });
   const [tagSel, setTagSel] = useState({} as { [key: string]: boolean });
   const map = useMemo(() => {
     const map: { [key: string]: PatternSelected } = {};
@@ -215,7 +215,7 @@ export default function NotesPage() {
       </header>
 
       <main className="flex flex-col h-full bg-white overflow-scroll">
-        <div className="self-stretch sticky top-0 bg-blue-gray-500 text-white mb-4 z-20 p-2 flex items-baseline">
+        <div className="self-stretch sticky top-0 bg-blue-gray-500 text-white mb-4 z-20 p-2 flex items-baseline flex-wrap">
           <Form
             method="post"
             className="flex items-baseline"
@@ -297,6 +297,16 @@ export default function NotesPage() {
             <Input
               name="source"
               label="Source (Book, URL, etc.)"
+              onMouseDown={(evt) => {
+                if (evt.currentTarget !== document.activeElement) {
+                  evt.preventDefault();
+                  evt.currentTarget.focus();
+                  evt.currentTarget.selectionStart = 0;
+                  evt.currentTarget.selectionEnd =
+                    evt.currentTarget.value.length;
+                  //
+                }
+              }}
               crossOrigin={undefined}
               {...lsText("pdb:source")}
             />
@@ -459,7 +469,7 @@ function Pattern({ pattern }: { pattern: PatternSelected }) {
           <div className="h-32 relative">
             <div>{image.date}</div>
             <div>{image.location}</div>
-            <div>{image.source}</div>
+            <div className="break-all">{image.source?.slice(0, 50)}</div>
             <div className="absolute bottom-0 left-0 right-0 flex flex-wrap text-xs">
               {pattern.tags.map((tag) => (
                 <div
