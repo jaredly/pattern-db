@@ -81,6 +81,65 @@ we will need a parallelorgram.
 Andd I think that paralellogram should be
 uniquely producible?
 
+HMMM IS IT the case
+that "superstructure" lines will reach across ... the triangle?
+heh might be hard to predict actually
+
+Ok, so thinking about applying this to the geometric-art app
+do I want to be in the business of ... just constructing the
+fundamental triangle?
+could be interesting.
+
+OK NEW DECISION: don't count one half and another half separately, just report the combined (merged) count of shapes.
+
+
+HRMMM SO
+I might want a way to indicate
+those patterns that would be just radial, that have been squished into tiling.
+--- hrm, maybe I could just identify subset triangles? yeah
+
+
+>
+
+It would be nice to...
+be able to filter on "this has a star" or "patterns that have no stars"
+
+list of shapes
+shapes have ~attributes
+(clockwise angles, starting with the angle pointing toward the center)
+
+star/kite/reg/dart/double-dart/double-kite
+
+exact (list of angles)
+  (and, list of congruent sides?)
+  (maybe, like, relative sizes of sides)
+  (eh, it's "more exact", right?)
+  (OH I could have "ratios of each successive side to the first side" yeah that'll work)
+  -> FLIP
+  -> OK so actually, hm
+
+So
+having an actually unique & comparable representation
+it'll be the triangle
+with the hypotenuse having a positive slope, and bottom side
+going straight to the right
+
+generall
+  idk I can like make some functions, that can detect common shapes!
+
+can I just pretend that it's a bag of shapes?
+
+SHAPE:
+- sides?
+- [convex | star | other]
+- regular? y/n
+
+
+# Next up:
+
+- Geometric Art updates to be able to export the fundamental whatsit
+  - [ ] flip (V/H) & rotate (45/90)
+
 
 # Nomenclature
 

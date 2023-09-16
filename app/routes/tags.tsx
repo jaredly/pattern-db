@@ -1,22 +1,11 @@
 import { Input } from "@material-tailwind/react";
 // import { Pattern } from "@prisma/client";
-import type { ActionArgs, LoaderArgs, NodeOnDiskFile } from "@remix-run/node";
+import type { ActionArgs, LoaderArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import {
-  Form,
-  Link,
-  NavLink,
-  Outlet,
-  useLoaderData,
-  useSubmit,
-} from "@remix-run/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Form, Link, useLoaderData } from "@remix-run/react";
 import { prisma } from "~/db.server";
 
-import { getNoteListItems } from "~/models/note.server";
-import { parseMultipartFormData, uploadImages } from "~/models/upload.server";
 import { requireUserId } from "~/session.server";
-import { useUser } from "~/utils";
 
 export const meta = () => [{ title: "Edit Tags" }];
 
