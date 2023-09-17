@@ -53,6 +53,17 @@ model Image {
   source String?
   date String?
   url String
+
+  tilings Tiling[]
+}
+
+model Tiling {
+  id    String @id @default(cuid())
+  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade) // for now, only one pattern per image.
+  imageId String
+
+  hash String
+  json String
 }
 
 model Link {
