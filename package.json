@@ -21,7 +21,9 @@
     "typecheck": "tsc && tsc -p cypress",
     "validate": "run-p \"test -- --run\" lint typecheck test:e2e:run"
   },
-  "prettier": {},
+  "prettier": {
+    "tabWidth": 4
+  },
   "eslintIgnore": [
     "/node_modules",
     "/build",
@@ -36,6 +38,7 @@
     "@remix-run/serve": "^1.19.3",
     "@web3-storage/multipart-parser": "^1.0.0",
     "bcryptjs": "^2.4.3",
+    "image-size": "^1.0.2",
     "isbot": "^3.6.12",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -82,6 +85,9 @@
   },
   "engines": {
     "node": ">=14"
+  },
+  "resolutions": {
+    "esbuild": "0.17.6"
   },
   "prisma": {
     "seed": "ts-node --require tsconfig-paths/register prisma/seed.ts"
