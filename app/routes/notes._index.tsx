@@ -107,10 +107,18 @@ export const loader = async ({ request }: LoaderArgs) => {
                         source: true,
                         date: true,
                         url: true,
-                        tilings: {
+                        imageTilings: {
                             select: {
-                                hash: true,
-                                json: true,
+                                h: true,
+                                w: true,
+                                x: true,
+                                y: true,
+                                tiling: {
+                                    select: {
+                                        hash: true,
+                                        json: true,
+                                    },
+                                },
                             },
                         },
                     },
@@ -123,7 +131,6 @@ export const loader = async ({ request }: LoaderArgs) => {
                 },
             },
         }),
-        // images: await prisma.image.findMany(),
         tags: await prisma.tag.findMany(),
         links: await prisma.link.findMany(),
     });
@@ -466,14 +473,14 @@ function Pattern({ pattern }: { pattern: PatternSelected }) {
                             src={image.url}
                             className="w-64 h-64 object-contain bg-black"
                         />
-                        {image.tilings.map((t) => (
+                        {image.imageTilings.map(({ tiling }) => (
                             <div
-                                key={t.hash}
+                                key={tiling.hash}
                                 style={{
                                     backgroundColor: "#afa",
                                 }}
                             >
-                                {t.hash.slice(0, 10)}
+                                {tiling.hash.slice(0, 10)}
                             </div>
                         ))}
                         {pattern.images.length > 1 ? (
