@@ -59,8 +59,8 @@ model Image {
 
 model Tiling {
   id    String @id @default(cuid())
-  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade) // for now, only one pattern per image.
   imageId String
+  images Image[]
 
   hash String
   json String
