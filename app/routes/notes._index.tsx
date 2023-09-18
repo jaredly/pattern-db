@@ -512,7 +512,7 @@ function Pattern({ pattern }: { pattern: PatternSelected }) {
                     {/* <Link to={`/notes/${pattern.images[0].id}/design`}> */}
                     <Link
                         to={`http://localhost:5173/?save=${encodeURIComponent(
-                            pattern.images[0].id
+                            HOST + "/notes/" + pattern.images[0].id
                         )}&load=${encodeURIComponent(
                             "http://localhost:3000" +
                                 pattern.images[0].url +
