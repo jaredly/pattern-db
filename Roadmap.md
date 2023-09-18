@@ -1,9 +1,18 @@
 
+# OK NOW
+that i have a bunch of classifications
+I want ... an eazy way to figure out if I've alread classified a pattern.
+like do I have a tiling for this oneee
+
+Sooo we're saying that .. we have tilings
+and like they can be.
+
 # Boo
 
 I want to embed the geometricart editorrrrr but
 it'll be hard to do I think idk
 
+OH NICE I can just use like http talking to each other.
 
 # Classification Systems
 
