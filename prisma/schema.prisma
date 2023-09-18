@@ -54,13 +54,25 @@ model Image {
   date String?
   url String
 
-  tilings Tiling[]
+  imageTilings ImageTiling[]
+}
+
+model ImageTiling {
+  id    String @id @default(cuid())
+  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  imageId String
+  tiling Tiling @relation(fields: [tilingId], references: [id], onDelete: Cascade)
+  tilingId String
+
+  x Int
+  y Int
+  w Int
+  h Int
 }
 
 model Tiling {
   id    String @id @default(cuid())
-  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade) // for now, only one pattern per image.
-  imageId String
+  imageTilings ImageTiling[]
 
   hash String
   json String
