@@ -1,4 +1,10 @@
 
+# Boo
+
+I want to embed the geometricart editorrrrr but
+it'll be hard to do I think idk
+
+
 # Classification Systems
 
 ok folks so some people have scienced about this already

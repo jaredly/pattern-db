@@ -1,7 +1,13 @@
 import { Input } from "@material-tailwind/react";
 import type { ActionArgs, LoaderArgs, NodeOnDiskFile } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Form, Link, useLoaderData, useSubmit } from "@remix-run/react";
+import {
+    Form,
+    Link,
+    useHref,
+    useLoaderData,
+    useSubmit,
+} from "@remix-run/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { prisma } from "~/db.server";
 
@@ -10,7 +16,7 @@ import { requireUserId } from "~/session.server";
 
 export const meta = () => [{ title: "Pattern Database" }];
 
-export const action = async ({ params, request }: ActionArgs) => {
+export const action = async ({ request }: ActionArgs) => {
     const userId = await requireUserId(request);
 
     const formData = await parseMultipartFormData(request, uploadImages);
@@ -101,6 +107,12 @@ export const loader = async ({ request }: LoaderArgs) => {
                         source: true,
                         date: true,
                         url: true,
+                        tilings: {
+                            select: {
+                                hash: true,
+                                json: true,
+                            },
+                        },
                     },
                 },
                 links: {
@@ -432,9 +444,12 @@ function getTagMap(
     return tmap;
 }
 
+const HOST = "http://localhost:3000";
+
 function Pattern({ pattern }: { pattern: PatternSelected }) {
     const [idx, setIdx] = useState(0);
     const image = pattern.images[idx];
+    const href = useHref(".");
     if (!image) return null;
     return (
         <div key={pattern.id}>
@@ -451,6 +466,16 @@ function Pattern({ pattern }: { pattern: PatternSelected }) {
                             src={image.url}
                             className="w-64 h-64 object-contain bg-black"
                         />
+                        {image.tilings.map((t) => (
+                            <div
+                                key={t.hash}
+                                style={{
+                                    backgroundColor: "#afa",
+                                }}
+                            >
+                                {t.hash.slice(0, 10)}
+                            </div>
+                        ))}
                         {pattern.images.length > 1 ? (
                             <div className="absolute bottom-0 left-0 right-0">
                                 <button
@@ -477,7 +502,20 @@ function Pattern({ pattern }: { pattern: PatternSelected }) {
                             </div>
                         ) : null}
                     </div>
-                    <Link to={`/notes/${pattern.images[0].id}/design`}>
+                    {/* <Link to={`/notes/${pattern.images[0].id}/design`}> */}
+                    <Link
+                        to={`http://localhost:5173/?save=${encodeURIComponent(
+                            pattern.images[0].id
+                        )}&load=${encodeURIComponent(
+                            "http://localhost:3000" +
+                                pattern.images[0].url +
+                                ".json"
+                        )}&back=${encodeURIComponent(
+                            HOST + href
+                        )}&image=${encodeURIComponent(
+                            "http://localhost:3000" + pattern.images[0].url
+                        )}`}
+                    >
                         Trace Pattern
                     </Link>
                     <div className="h-32 relative">
