@@ -198,9 +198,9 @@ const ViewTiling = ({ tiling }: { tiling: LoaderReturn["tilings"][0] }) => {
                     d={`${ok.p2
                         .map(
                             ({ x, y }, i) =>
-                                `${i === 0 ? "M" : "L"}${x.toFixed(
-                                    2
-                                )} ${y.toFixed(2)}`
+                                `${i === 0 ? "M" : "L"}${handleNegZero(
+                                    x
+                                )} ${handleNegZero(y)}`
                         )
                         .join(" ")}Z`}
                     fill="rgb(50,50,50)"
@@ -209,20 +209,25 @@ const ViewTiling = ({ tiling }: { tiling: LoaderReturn["tilings"][0] }) => {
                 {ok.full.map(([p1, p2]) => {
                     return (
                         <line
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            x1={p1.x}
-                            x2={p2.x}
-                            y1={p1.y}
-                            y2={p2.y}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            x1={p1.x.toFixed(2)}
+                            x2={p2.x.toFixed(2)}
+                            y1={p1.y.toFixed(2)}
+                            y2={p2.y.toFixed(2)}
                             stroke="yellow"
-                            stroke-width="0.02"
+                            strokeWidth="0.02"
                         />
                     );
                 })}
             </svg>
         </div>
     );
+};
+
+const handleNegZero = (n: number) => {
+    const m = n.toFixed(2);
+    return m === "-0.00" ? "0.00" : m;
 };
 
 export default function NotesPage() {

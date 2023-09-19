@@ -50,12 +50,18 @@ export const action = async ({ params, request }: ActionArgs) => {
     const hashes = image.imageTilings.map((it) => it.tiling.hash);
 
     for (let tiling of Object.values(data.tilings)) {
-        if (hashes.includes(tiling.cache.hash)) {
-            continue;
-        }
         const found = await prisma.tiling.findFirst({
             where: { hash: tiling.cache.hash },
         });
+        if (hashes.includes(tiling.cache.hash)) {
+            if (found) {
+                await prisma.tiling.update({
+                    where: { id: found.id },
+                    data: { json: JSON.stringify(tiling) },
+                });
+            }
+            continue;
+        }
         if (found) {
             await prisma.image.update({
                 where: { id: params.image },
