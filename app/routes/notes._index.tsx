@@ -8,11 +8,14 @@ import {
     useLoaderData,
     useSubmit,
 } from "@remix-run/react";
+import { Tiling } from "geometricart/src/types";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { prisma } from "~/db.server";
 
 import { parseMultipartFormData, uploadImages } from "~/models/upload.server";
 import { requireUserId } from "~/session.server";
+import * as geo from "geometricart/src/editor/tilingPoints";
+import * as g2 from "geometricart/src/rendering/getMirrorTransforms";
 
 export const meta = () => [{ title: "Pattern Database" }];
 
@@ -96,6 +99,13 @@ export const action = async ({ request }: ActionArgs) => {
 
 export const loader = async ({ request }: LoaderArgs) => {
     return json({
+        tilings: await prisma.tiling.findMany({
+            select: {
+                hash: true,
+                json: true,
+                id: true,
+            },
+        }),
         patterns: await prisma.pattern.findMany({
             select: {
                 id: true,
@@ -136,9 +146,10 @@ export const loader = async ({ request }: LoaderArgs) => {
     });
 };
 
-type PatternSelected = Awaited<
+type LoaderReturn = Awaited<
     ReturnType<Awaited<ReturnType<typeof loader>>["json"]>
->["patterns"][0];
+>;
+type PatternSelected = LoaderReturn["patterns"][0];
 
 const lsText = (key: string) => {
     const [value, setValue] = useState("");
@@ -162,8 +173,60 @@ label:hover > input[type=checkbox]:checked + div {
     background-color: rgb(207 216 220 / var(--tw-bg-opacity));
 }`;
 
+const ViewTiling = ({ tiling }: { tiling: LoaderReturn["tilings"][0] }) => {
+    const data: Tiling = useMemo(() => JSON.parse(tiling.json), [tiling.json]);
+    const ok = useMemo(() => {
+        const pts = geo.tilingPoints(data.shape);
+        const tx = geo.getTransform(pts);
+        const p2 = pts.map((pt) => g2.applyMatrices(pt, tx));
+        const full = geo.eigenShapesToLines(
+            data.cache.segments.map((s) => [s.prev, s.segment.to]),
+            data.shape.type === "right-triangle" && data.shape.rotateHypotenuse,
+            g2.applyMatrices(pts[2], tx)
+        );
+        return { p2, full };
+    }, [tiling]);
+    return (
+        <div className="hover:bg-blue-gray-700 cursor-pointer">
+            <div className="p-3 text-center">{tiling.hash.slice(0, 10)}</div>
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ background: "black", width: 300, height: 300 }}
+                viewBox="-2.5 -2.5 5 5"
+            >
+                <path
+                    d={`${ok.p2
+                        .map(
+                            ({ x, y }, i) =>
+                                `${i === 0 ? "M" : "L"}${x.toFixed(
+                                    2
+                                )} ${y.toFixed(2)}`
+                        )
+                        .join(" ")}Z`}
+                    fill="rgb(50,50,50)"
+                    stroke="none"
+                />
+                {ok.full.map(([p1, p2]) => {
+                    return (
+                        <line
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            x1={p1.x}
+                            x2={p2.x}
+                            y1={p1.y}
+                            y2={p2.y}
+                            stroke="yellow"
+                            stroke-width="0.02"
+                        />
+                    );
+                })}
+            </svg>
+        </div>
+    );
+};
+
 export default function NotesPage() {
-    const { patterns, tags, links } = useLoaderData<typeof loader>();
+    const { patterns, tags, links, tilings } = useLoaderData<typeof loader>();
     const form = useRef<HTMLFormElement>(null);
     const pform = useRef<HTMLFormElement>(null);
     const submit = useSubmit();
@@ -227,148 +290,161 @@ export default function NotesPage() {
                 </Form>
             </header>
 
-            <main className="flex flex-col h-full bg-white overflow-scroll">
-                <div className="self-stretch sticky top-0 bg-blue-gray-500 text-white mb-4 z-20 p-2 flex items-baseline flex-wrap">
-                    <Form
-                        method="post"
-                        className="flex items-baseline"
-                        encType="multipart/form-data"
-                    >
-                        <Input
-                            label="New Tag"
-                            name="tag"
-                            crossOrigin={null}
-                            containerProps={{
-                                style: {
-                                    flexGrow: 0,
-                                    width: 0,
-                                    color: "white",
-                                },
-                                className: "ml-2 mr-2",
-                            }}
-                            onKeyDown={(evt) => {
-                                if (evt.key === "Enter") {
-                                    const fd = new FormData(
-                                        evt.currentTarget.form!
-                                    );
-                                    fd.set("intent", "tag:new");
+            <main className="flex flex-row flex-1 bg-white min-h-0">
+                <div className="w-64 min-w-max overflow-scroll">
+                    {tilings.map((tiling) => (
+                        <ViewTiling key={tiling.id} tiling={tiling} />
+                    ))}
+                </div>
+                <div className="flex flex-col overflow-scroll">
+                    <div className="self-stretch sticky top-0 bg-blue-gray-500 text-white mb-4 z-20 p-2 flex items-baseline flex-wrap">
+                        <Form
+                            method="post"
+                            className="flex items-baseline"
+                            encType="multipart/form-data"
+                        >
+                            <Input
+                                label="New Tag"
+                                name="tag"
+                                crossOrigin={null}
+                                containerProps={{
+                                    style: {
+                                        flexGrow: 0,
+                                        width: 0,
+                                        color: "white",
+                                    },
+                                    className: "ml-2 mr-2",
+                                }}
+                                onKeyDown={(evt) => {
+                                    if (evt.key === "Enter") {
+                                        const fd = new FormData(
+                                            evt.currentTarget.form!
+                                        );
+                                        fd.set("intent", "tag:new");
+                                        submit(fd, {
+                                            encType: "multipart/form-data",
+                                            method: "post",
+                                        });
+                                        evt.currentTarget.value = "";
+                                        evt.preventDefault();
+                                    }
+                                }}
+                                style={{ color: "white" }}
+                                labelProps={{
+                                    style: {
+                                        color: "white",
+                                    },
+                                }}
+                            />
+                            <button
+                                name="intent"
+                                value="tag:new"
+                                className="p-2 hover:bg-blue-gray-300 rounded"
+                            >
+                                Create Tag
+                            </button>
+                        </Form>
+                        {tags.sort(compareTags).map((tag) => (
+                            <button
+                                key={tag.id}
+                                className={
+                                    `p-2 hover:bg-blue-gray-300 rounded mr-1 ` +
+                                    (tagSel[tag.id]
+                                        ? " bg-blue-gray-200"
+                                        : tagSel[tag.id] === false
+                                        ? " bg-blue-gray-400"
+                                        : "")
+                                }
+                                name="tag"
+                                value={tag.id}
+                                form="patterns"
+                            >
+                                {tag.category
+                                    ? tag.category + ":" + tag.name
+                                    : tag.name}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex flex-wrap">
+                        <Form
+                            ref={form}
+                            method="post"
+                            className="space-y-3 mb-6 w-64 p-4"
+                            encType="multipart/form-data"
+                        >
+                            <input
+                                type="file"
+                                name="image"
+                                onChange={(evt) => {
+                                    const fd = new FormData(evt.target.form!);
+                                    fd.set("intent", "upload");
                                     submit(fd, {
                                         encType: "multipart/form-data",
                                         method: "post",
                                     });
-                                    evt.currentTarget.value = "";
-                                    evt.preventDefault();
-                                }
-                            }}
-                            style={{ color: "white" }}
-                            labelProps={{
-                                style: {
-                                    color: "white",
-                                },
-                            }}
+                                }}
+                            />
+                            <Input
+                                name="source"
+                                label="Source (Book, URL, etc.)"
+                                onMouseDown={(evt) => {
+                                    if (
+                                        evt.currentTarget !==
+                                        document.activeElement
+                                    ) {
+                                        evt.preventDefault();
+                                        evt.currentTarget.focus();
+                                        evt.currentTarget.selectionStart = 0;
+                                        evt.currentTarget.selectionEnd =
+                                            evt.currentTarget.value.length;
+                                        //
+                                    }
+                                }}
+                                crossOrigin={undefined}
+                                {...lsText("pdb:source")}
+                            />
+                            <Input
+                                name="location"
+                                label="Location"
+                                crossOrigin={undefined}
+                                {...lsText("pdb:location")}
+                            />
+                            <Input
+                                name="date"
+                                label="Date"
+                                crossOrigin={undefined}
+                                {...lsText("pdb:date")}
+                            />
+                            <button name="intent" value="upload">
+                                Upload
+                            </button>
+                        </Form>
+                        <style
+                            dangerouslySetInnerHTML={{ __html: customStyle }}
                         />
-                        <button
-                            name="intent"
-                            value="tag:new"
-                            className="p-2 hover:bg-blue-gray-300 rounded"
-                        >
-                            Create Tag
-                        </button>
-                    </Form>
-                    {tags.sort(compareTags).map((tag) => (
-                        <button
-                            key={tag.id}
-                            className={
-                                `p-2 hover:bg-blue-gray-300 rounded mr-1 ` +
-                                (tagSel[tag.id]
-                                    ? " bg-blue-gray-200"
-                                    : tagSel[tag.id] === false
-                                    ? " bg-blue-gray-400"
-                                    : "")
-                            }
-                            name="tag"
-                            value={tag.id}
-                            form="patterns"
-                        >
-                            {tag.category
-                                ? tag.category + ":" + tag.name
-                                : tag.name}
-                        </button>
-                    ))}
-                </div>
-                <div className="flex flex-wrap">
-                    <Form
-                        ref={form}
-                        method="post"
-                        className="space-y-3 mb-6 w-64 p-4"
-                        encType="multipart/form-data"
-                    >
-                        <input
-                            type="file"
-                            name="image"
+                        <Form
+                            id="patterns"
+                            method="post"
+                            className="contents"
+                            encType="multipart/form-data"
+                            ref={pform}
                             onChange={(evt) => {
-                                const fd = new FormData(evt.target.form!);
-                                fd.set("intent", "upload");
-                                submit(fd, {
-                                    encType: "multipart/form-data",
-                                    method: "post",
-                                });
+                                const data = new FormData(evt.currentTarget);
+                                setTagSel(getTagMap(data, tags, map));
                             }}
-                        />
-                        <Input
-                            name="source"
-                            label="Source (Book, URL, etc.)"
-                            onMouseDown={(evt) => {
-                                if (
-                                    evt.currentTarget !== document.activeElement
-                                ) {
-                                    evt.preventDefault();
-                                    evt.currentTarget.focus();
-                                    evt.currentTarget.selectionStart = 0;
-                                    evt.currentTarget.selectionEnd =
-                                        evt.currentTarget.value.length;
-                                    //
-                                }
-                            }}
-                            crossOrigin={undefined}
-                            {...lsText("pdb:source")}
-                        />
-                        <Input
-                            name="location"
-                            label="Location"
-                            crossOrigin={undefined}
-                            {...lsText("pdb:location")}
-                        />
-                        <Input
-                            name="date"
-                            label="Date"
-                            crossOrigin={undefined}
-                            {...lsText("pdb:date")}
-                        />
-                        <button name="intent" value="upload">
-                            Upload
-                        </button>
-                    </Form>
-                    <style dangerouslySetInnerHTML={{ __html: customStyle }} />
-                    <Form
-                        id="patterns"
-                        method="post"
-                        className="contents"
-                        encType="multipart/form-data"
-                        ref={pform}
-                        onChange={(evt) => {
-                            const data = new FormData(evt.currentTarget);
-                            setTagSel(getTagMap(data, tags, map));
-                        }}
-                    >
-                        <input type="hidden" name="intent" value="tags" />
-                        {patterns
-                            .slice()
-                            .reverse()
-                            .map((pattern) => (
-                                <Pattern pattern={pattern} key={pattern.id} />
-                            ))}
-                    </Form>
+                        >
+                            <input type="hidden" name="intent" value="tags" />
+                            {patterns
+                                .slice()
+                                .reverse()
+                                .map((pattern) => (
+                                    <Pattern
+                                        pattern={pattern}
+                                        key={pattern.id}
+                                    />
+                                ))}
+                        </Form>
+                    </div>
                 </div>
                 {/* <div className="h-full w-80 border-r bg-gray-50">
           <hr />
@@ -522,6 +598,7 @@ function Pattern({ pattern }: { pattern: PatternSelected }) {
                         )}&image=${encodeURIComponent(
                             "http://localhost:3000" + pattern.images[0].url
                         )}`}
+                        className="hover:bg-blue-gray-100"
                     >
                         Trace Pattern
                     </Link>
