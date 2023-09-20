@@ -24,9 +24,93 @@ export const action = async ({ request }: ActionArgs) => {
 
     const formData = await parseMultipartFormData(request, uploadImages);
 
+    const tiling = formData.get("add-tiling") as string;
+    if (tiling) {
+        const ids = formData.getAll("pattern") as string[];
+
+        // const haveTheTiling = (
+        //     await prisma.imageTiling.findMany({
+        //         where: { tilingId: tiling, },
+        //         select: {image: {
+        //             select: {
+        //                 id: true,
+        //                 pattern: { select: { id: true } }
+        //             }
+        //         }},
+        //     })
+        // ).map(it => it.image.pattern.id);
+        // if (haveTheTiling.length === patterns.length) {
+        //     await Promise.all(
+        //         patterns.map((id) =>
+        //             prisma.tag.update({
+        //                 where: { id: tag },
+        //                 data: { patterns: { disconnect: { id } } },
+        //             })
+        //         )
+        //     );
+        // } else {
+        //     await Promise.all(
+        //         patterns
+        //             .filter((p) => !haveTheTiling.includes(p))
+        //             .map((id) =>
+        //                 prisma.tag.update({
+        //                     where: { id: tag },
+        //                     data: { patterns: { connect: { id } } },
+        //                 })
+        //             )
+        //     );
+        // }
+
+        const patterns = await prisma.pattern.findMany({
+            where: { id: { in: ids } },
+            select: {
+                images: {
+                    select: {
+                        id: true,
+                        imageTilings: {
+                            select: {
+                                id: true,
+                                tilingId: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        for (let pattern of patterns) {
+            if (!pattern.images.length) {
+                continue;
+            }
+            const image = pattern.images[0];
+            const it = image.imageTilings.find((it) => it.tilingId === tiling);
+            if (it) {
+                await prisma.imageTiling.delete({ where: { id: it.id } });
+                continue;
+            }
+            await prisma.image.update({
+                where: { id: image.id },
+                data: {
+                    imageTilings: {
+                        create: {
+                            tiling: {
+                                connect: { id: tiling },
+                            },
+                            h: 0,
+                            w: 0,
+                            x: 0,
+                            y: 0,
+                        },
+                    },
+                },
+            });
+        }
+
+        return json({ errors: null }, { status: 200 });
+    }
+
     switch (formData.get("intent")) {
         case "tags": {
-            console.log([...formData.entries()]);
             const patterns = formData.getAll("pattern") as string[];
             const tag = formData.get("tag") as string;
             const haveTheTag = (
@@ -182,12 +266,22 @@ const ViewTiling = ({ tiling }: { tiling: LoaderReturn["tilings"][0] }) => {
         const full = geo.eigenShapesToLines(
             data.cache.segments.map((s) => [s.prev, s.segment.to]),
             data.shape.type === "right-triangle" && data.shape.rotateHypotenuse,
-            g2.applyMatrices(pts[2], tx)
+            g2.applyMatrices(pts[2], tx),
+            p2
         );
         return { p2, full };
     }, [tiling]);
+    // const submit = useSubmit();
     return (
-        <div className="hover:bg-blue-gray-700 cursor-pointer">
+        <div>
+            <button
+                form="patterns"
+                name="add-tiling"
+                value={tiling.id}
+                className="hover:bg-deep-orange-500 cursor-pointer px-4 py-2"
+            >
+                Add to selected images
+            </button>
             <div className="p-3 text-center">{tiling.hash.slice(0, 10)}</div>
             <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -206,9 +300,10 @@ const ViewTiling = ({ tiling }: { tiling: LoaderReturn["tilings"][0] }) => {
                     fill="rgb(50,50,50)"
                     stroke="none"
                 />
-                {ok.full.map(([p1, p2]) => {
+                {ok.full.map(([p1, p2], i) => {
                     return (
                         <line
+                            key={i}
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             x1={p1.x.toFixed(2)}

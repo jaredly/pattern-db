@@ -26,6 +26,8 @@ export const loader = async ({ params }: LoaderArgs) => {
 export const action = async ({ params, request }: ActionArgs) => {
     const data: State = await request.json();
 
+    console.log("saving pattern something");
+
     const image = await prisma.image.findUnique({
         where: { id: params.image },
         select: {
