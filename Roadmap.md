@@ -1,4 +1,10 @@
 
+# Ok so
+
+- [ ] click a pattern to see the matching images
+- [ ] add the ability to narrow down patterns by stuff
+
+
 # OK NOW
 that i have a bunch of classifications
 I want ... an eazy way to figure out if I've alread classified a pattern.
@@ -6,6 +12,9 @@ like do I have a tiling for this oneee
 
 Sooo we're saying that .. we have tilings
 and like they can be.
+
+- [x] assign a tiling to a new image thx
+= [ ] ditchthe pattern idea I think? images <-> tilings atm
 
 # Boo
 
