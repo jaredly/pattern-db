@@ -27,9 +27,12 @@ export const ViewTiling = ({
     // const submit = useSubmit();
     return (
         <div className="flex flex-col items-stretch p-4">
-            <div className="p-3 text-center">
+            <a // className="p-3 text-center"
+                className="hover:bg-deep-orange-500 cursor-pointer px-4 py-2"
+                href={`notes/${tiling.id}`}
+            >
                 {tiling.hash.slice(0, 10)} ({count ?? 0})
-            </div>
+            </a>
             <button
                 form="patterns"
                 name="add-tiling"

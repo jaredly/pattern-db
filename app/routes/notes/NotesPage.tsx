@@ -18,7 +18,6 @@ export default function NotesPage() {
     const form = useRef<HTMLFormElement>(null);
     const pform = useRef<HTMLFormElement>(null);
     const submit = useSubmit();
-    //   const [check, setCheck] = useState({} as { [key: string]: boolean });
     const [tagSel, setTagSel] = useState({} as { [key: string]: boolean });
     const map = useMemo(() => {
         const map: { [key: string]: PatternSelected } = {};
