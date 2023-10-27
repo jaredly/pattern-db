@@ -15,6 +15,9 @@ import {
     segmentKey,
     segmentKeyInner,
 } from "geometricart/src/rendering/segmentKey";
+import { closeEnough } from "geometricart/src/rendering/epsilonToZero";
+import { lineLine, lineToSlope } from "geometricart/src/rendering/intersect";
+import { angleBetween } from "geometricart/src/rendering/findNextSegments";
 
 const rotateShape = (shape: BarePath, idx: number): BarePath => {
     if (idx === 0) return shape;
@@ -35,9 +38,34 @@ const verticalize = (shape: BarePath): BarePath => {
             dists.push([i, j, d]);
         }
     }
-    const best = dists.sort((a, b) => b[2] - a[2])[0];
-    const p1 = shape.segments[best[0]].to;
-    const angle = angleTo(p1, shape.segments[best[1]].to);
+    const sorted = dists.sort((a, b) => b[2] - a[2]);
+    const best = sorted[0];
+
+    let p1;
+    let angle;
+
+    if (closeEnough(sorted[1][2], best[2])) {
+        const a1 = shape.segments[sorted[1][0]].to;
+        const a2 = shape.segments[sorted[1][1]].to;
+        const b1 = shape.segments[best[0]].to;
+        const b2 = shape.segments[best[1]].to;
+        // two! find the intersection, and then ... do whatsit
+        const mid = lineLine(lineToSlope(a1, a2), lineToSlope(b1, b2));
+        if (mid) {
+            const t1 = angleTo(a1, a2);
+            const t2 = angleTo(b1, b2);
+            const btw = angleBetween(t1, t2, true);
+            const theta = t1 + btw / 2;
+            p1 = mid;
+            angle = theta;
+        } else {
+            p1 = shape.segments[best[0]].to;
+            angle = angleTo(p1, shape.segments[best[1]].to);
+        }
+    } else {
+        p1 = shape.segments[best[0]].to;
+        angle = angleTo(p1, shape.segments[best[1]].to);
+    }
     const tx = [
         // origin at zero
         translationMatrix({ x: -p1.x, y: -p1.y }),
