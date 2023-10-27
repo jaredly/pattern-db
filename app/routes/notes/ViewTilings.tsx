@@ -11,6 +11,46 @@ import {
 } from "geometricart/src/rendering/getMirrorTransforms";
 import { transformSegment } from "geometricart/src/rendering/points";
 import { coordKey } from "geometricart/src/rendering/coordKey";
+import {
+    segmentKey,
+    segmentKeyInner,
+} from "geometricart/src/rendering/segmentKey";
+
+const rotateShape = (shape: BarePath, idx: number): BarePath => {
+    if (idx === 0) return shape;
+    const origin = shape.segments[idx - 1].to;
+    return {
+        origin,
+        segments: shape.segments
+            .slice(idx)
+            .concat(shape.segments.slice(0, idx)),
+    };
+};
+
+const verticalize = (shape: BarePath): BarePath => {
+    const dists: [number, number, number][] = [];
+    for (let i = 0; i < shape.segments.length; i++) {
+        for (let j = i + 1; j < shape.segments.length; j++) {
+            const d = dist(shape.segments[i].to, shape.segments[j].to);
+            dists.push([i, j, d]);
+        }
+    }
+    const best = dists.sort((a, b) => b[2] - a[2])[0];
+    const p1 = shape.segments[best[0]].to;
+    const angle = angleTo(p1, shape.segments[best[1]].to);
+    const tx = [
+        // origin at zero
+        translationMatrix({ x: -p1.x, y: -p1.y }),
+        // rotate so the first segment is on the x axis pointing positive
+        rotationMatrix(-angle + Math.PI / 2),
+        // scale so the first segment has length 1
+        scaleMatrix(1 / best[2], 1 / best[2]),
+    ];
+    return {
+        origin: applyMatrices(shape.origin, tx),
+        segments: shape.segments.map((seg) => transformSegment(seg, tx)),
+    };
+};
 
 const normalizeShape = (shape: BarePath): BarePath => {
     const theta = angleTo(shape.origin, shape.segments[0].to);
@@ -29,16 +69,8 @@ const normalizeShape = (shape: BarePath): BarePath => {
     };
 };
 
-const shapeKey = (shape: BarePath) =>
-    `${coordKey(shape.origin)} ${shape.segments
-        .map((seg) =>
-            seg.type === "Line"
-                ? coordKey(seg.to)
-                : `${coordKey(seg.center)} ${coordKey(seg.to)} ${
-                      seg.clockwise ? "CC" : "C"
-                  }`
-        )
-        .join(" $ ")}`;
+const shapeKey = (segments: BarePath["segments"]) =>
+    segments.map(segmentKeyInner).join(" $ ");
 
 const organizeShapes = (
     tilings: { hash: string; json: string; id: string }[]
@@ -52,9 +84,11 @@ const organizeShapes = (
 
     const shapesAndSuch: {
         [count: number]: {
-            [hash: string]: BarePath;
+            [hash: string]: { shape: BarePath; tilings: string[] };
         };
     } = {};
+
+    const rotated: { [hash: string]: string } = {};
 
     for (let tiling of datas) {
         for (let shape of tiling.data.cache.shapes) {
@@ -62,11 +96,49 @@ const organizeShapes = (
             if (!shapesAndSuch[num]) {
                 shapesAndSuch[num] = {};
             }
+
             const norm = normalizeShape(shape);
-            const hash = shapeKey(norm);
-            if (!shapesAndSuch[num][hash]) {
-                shapesAndSuch[num][hash] = shape;
+            const first = shapeKey(norm.segments);
+
+            if (rotated[first]) {
+                const match = shapesAndSuch[num][rotated[first]];
+                if (!match.tilings.includes(tiling.id)) {
+                    match.tilings.push(tiling.id);
+                }
+                continue;
             }
+
+            rotated[first] = first;
+            shapesAndSuch[num][first] = {
+                shape: verticalize(norm),
+                tilings: [tiling.id],
+            };
+
+            for (let i = 1; i < norm.segments.length; i++) {
+                const rot = normalizeShape(rotateShape(shape, i));
+                const hash = shapeKey(rot.segments);
+                rotated[hash] = first;
+            }
+
+            // let most;
+            // if (rotated[first]) {
+            //     most = rotated[first];
+            // } else {
+            //     rotated[first] = first;
+            //     most = first;
+            //     for (let i = 1; i < norm.segments.length; i++) {
+            //         const segs = norm.segments
+            //             .slice(i)
+            //             .concat(norm.segments.slice(0, i));
+            //         const hash = shapeKey(segs);
+            //         rotated[hash] = first;
+            //     }
+            // }
+
+            // if (!shapesAndSuch[num][most]) {
+            //     shapesAndSuch[num][most] = { shape: norm, tilings: [] };
+            // }
+            // shapesAndSuch[num][most].tilings.push(tiling.id);
         }
     }
 
@@ -100,7 +172,10 @@ export function ViewTilings({
                         {k}-sided: {Object.keys(org[+k]).length}
                     </div>
                     {Object.keys(org[+k]).map((hash) => {
-                        const { origin, segments } = org[+k][hash];
+                        const {
+                            shape: { origin, segments },
+                            tilings: ids,
+                        } = org[+k][hash];
                         const pts = segments.map((s) => s.to);
                         const xs = pts.map((p) => p.x);
                         const ys = pts.map((p) => p.y);
@@ -123,11 +198,13 @@ export function ViewTilings({
                         const h = y1 - y0;
                         const w = x1 - x0;
                         return (
-                            <div key={hash} className="p-2">
+                            <div key={hash} className="p-2 relative">
                                 <svg
                                     width={(50 / h) * w}
                                     height={50}
-                                    viewBox={`${x0} ${y0} ${w} ${h}`}
+                                    viewBox={`${x0.toFixed(2)} ${y0.toFixed(
+                                        2
+                                    )} ${w.toFixed(2)} ${h.toFixed(2)}`}
                                 >
                                     <path
                                         fill="red"
@@ -143,6 +220,25 @@ export function ViewTilings({
                                             .join("")}Z`}
                                     />
                                 </svg>
+                                {ids.length > 1 ? (
+                                    <div
+                                        className="absolute"
+                                        style={{
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            display: "flex",
+                                            textShadow: "1px 1px 2px white",
+                                        }}
+                                    >
+                                        {ids.length}
+                                    </div>
+                                ) : (
+                                    ""
+                                )}
                             </div>
                         );
                     })}

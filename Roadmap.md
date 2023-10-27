@@ -1,9 +1,23 @@
+3/4 /5 /6 /7
+9/43/10/52/36
+
+- [x] detect more dups pls
+- [ ] also, I'd like to sort things, organize by ... order of angles ... and ~ranking of equal sides? idk
+  - yeah gotta have a rotating hash map for the angles, and sides?
+- [ ] and then, let's orient everything in roughly the same way? Like vertically oriented.
+
+Sooooo like for sides:
+- First: sort the side lengths.
+  - THEN replace the sides with the *index* into that sorted list
+  - yeah, that sounds awesome.
+- Can we do the same for angles? Seems like it honestly.
 
 # Ok so
 
 - [ ] click a pattern to see the matching images
 - [ ] add the ability to narrow down patterns by stuff
   - dropdowns based on the number of sides of a shape
+
 
 
 # OK NOW
