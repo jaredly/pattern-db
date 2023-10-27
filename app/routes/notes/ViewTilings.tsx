@@ -15,39 +15,92 @@ import {
 
 const OrgMenu = ({
     tilings,
+    filter,
+    setFilter,
 }: {
     tilings: { hash: string; json: string; id: string }[];
+    filter: { tilings: string[]; shape: string }[];
+    setFilter: (f: { tilings: string[]; shape: string }[]) => void;
 }) => {
-    const org = useMemo(() => organizeShapes(tilings), [tilings]);
+    const { fullOrg: org, byHash } = useMemo(
+        () => organizeShapes(tilings),
+        [tilings]
+    );
 
     return (
         <div>
+            <div className="flex flex-wrap">
+                {filter.map((f) => (
+                    <div key={f.shape}>
+                        <Button
+                            onClick={() => {
+                                setFilter(
+                                    filter.filter((m) => m.shape !== f.shape)
+                                );
+                            }}
+                            className="p-0 bg-transparent"
+                        >
+                            {showShape(
+                                byHash[f.shape].shape.segments,
+                                f.shape,
+                                byHash[f.shape].shape.origin,
+                                byHash[f.shape].tilings,
+                                35
+                            )}
+                        </Button>
+                    </div>
+                ))}
+            </div>
             <Menu>
                 <MenuHandler>
-                    <Button>Hello</Button>
+                    <Button>Filter by shape</Button>
                 </MenuHandler>
                 <MenuList>
                     {Object.entries(org)
                         .sort((a, b) => +a[0] - +b[0])
-                        .map(([count, byConcavity]) => (
-                            <Menu key={count} placement="right-start">
-                                <MenuHandler>
-                                    <MenuItem>{count} sides</MenuItem>
-                                </MenuHandler>
-                                <MenuList>
-                                    {Object.entries(byConcavity)
-                                        .sort((a, b) => +a[0] - +b[0])
-                                        .map(([conc, byPatternClass]) => (
-                                            <Menu
-                                                key={conc}
-                                                placement="right-start"
-                                            >
-                                                <MenuHandler>
-                                                    <MenuItem>
-                                                        {conc} concavities
-                                                    </MenuItem>
-                                                </MenuHandler>
-                                                <MenuList>
+                        .map(([count, byConcavity]) => {
+                            const sorted = Object.entries(byConcavity).sort(
+                                (a, b) => +a[0] - +b[0]
+                            );
+
+                            return (
+                                <Menu key={count} placement="right-start">
+                                    <MenuHandler>
+                                        <MenuItem className="flex">
+                                            {sorted
+                                                .slice(0, 3)
+                                                .map(([_, byPC]) =>
+                                                    Object.values(byPC)
+                                                        .slice(0, 1)
+                                                        .map((m, i) =>
+                                                            showShape(
+                                                                m[0].shape
+                                                                    .segments,
+                                                                i + "",
+                                                                m[0].shape
+                                                                    .origin,
+                                                                m[0].tilings,
+                                                                20
+                                                            )
+                                                        )
+                                                )}
+                                        </MenuItem>
+                                    </MenuHandler>
+                                    <MenuList
+                                        onClick={(evt) => {
+                                            evt.stopPropagation();
+                                        }}
+                                    >
+                                        {sorted.map(
+                                            ([conc, byPatternClass]) => (
+                                                <div
+                                                    role="menuitem"
+                                                    key={conc}
+                                                    onClick={(evt) => {
+                                                        evt.stopPropagation();
+                                                    }}
+                                                    className="flex flex-wrap max-w-lg hover:bg-transparent"
+                                                >
                                                     {Object.entries(
                                                         byPatternClass
                                                     )
@@ -62,33 +115,79 @@ const OrgMenu = ({
                                                                 return a1 - a2;
                                                             return l1 - l2;
                                                         })
-                                                        .map(([pc, shapes]) => (
-                                                            <MenuItem className="flex">
-                                                                {shapes.map(
+                                                        .map(
+                                                            ([pc, shapes]) =>
+                                                                // <MenuItem className="flex">
+                                                                shapes.map(
                                                                     (
                                                                         shape,
                                                                         i
-                                                                    ) =>
-                                                                        showShape(
-                                                                            shape
-                                                                                .shape
-                                                                                .segments,
-                                                                            pc +
-                                                                                i,
-                                                                            shape
-                                                                                .shape
-                                                                                .origin,
-                                                                            shape.tilings
-                                                                        )
-                                                                )}
-                                                            </MenuItem>
-                                                        ))}
-                                                </MenuList>
-                                            </Menu>
-                                        ))}
-                                </MenuList>
-                            </Menu>
-                        ))}
+                                                                    ) => {
+                                                                        const selected =
+                                                                            filter.some(
+                                                                                (
+                                                                                    f
+                                                                                ) =>
+                                                                                    f.shape ===
+                                                                                    shape.hash
+                                                                            );
+                                                                        return (
+                                                                            <Button
+                                                                                className={
+                                                                                    "p-0 shadow-none " +
+                                                                                    (selected
+                                                                                        ? ""
+                                                                                        : "bg-transparent")
+                                                                                }
+                                                                                onClick={(
+                                                                                    evt
+                                                                                ) => {
+                                                                                    evt.stopPropagation();
+                                                                                    setFilter(
+                                                                                        selected
+                                                                                            ? filter.filter(
+                                                                                                  (
+                                                                                                      f
+                                                                                                  ) =>
+                                                                                                      f.shape !==
+                                                                                                      shape.hash
+                                                                                              )
+                                                                                            : filter.concat(
+                                                                                                  {
+                                                                                                      tilings:
+                                                                                                          shape.tilings,
+                                                                                                      shape: shape.hash,
+                                                                                                  }
+                                                                                              )
+                                                                                    );
+                                                                                }}
+                                                                            >
+                                                                                {" "}
+                                                                                {showShape(
+                                                                                    shape
+                                                                                        .shape
+                                                                                        .segments,
+                                                                                    pc +
+                                                                                        i,
+                                                                                    shape
+                                                                                        .shape
+                                                                                        .origin,
+                                                                                    shape.tilings
+                                                                                )}
+                                                                            </Button>
+                                                                        );
+                                                                    }
+                                                                )
+                                                            // </MenuItem>
+                                                        )}
+                                                    {/* </MenuList> */}
+                                                </div>
+                                            )
+                                        )}
+                                    </MenuList>
+                                </Menu>
+                            );
+                        })}
                 </MenuList>
             </Menu>
         </div>
@@ -103,11 +202,22 @@ export function ViewTilings({
     tilingCounts: Record<string, number>;
 }) {
     const [what, setWhat] = useState("hi");
+    const [filter, setFilter] = useState(
+        [] as {
+            tilings: string[];
+            shape: string;
+        }[]
+    );
 
     return (
         <div className="w-64 min-w-max overflow-scroll">
-            <OrgMenu tilings={tilings} />
-            {tilings.map((tiling) => (
+            <OrgMenu tilings={tilings} filter={filter} setFilter={setFilter} />
+            {(filter.length
+                ? tilings.filter((t) =>
+                      filter.some((f) => f.tilings.includes(t.id))
+                  )
+                : tilings
+            ).map((tiling) => (
                 <ViewTiling
                     key={tiling.id}
                     tiling={tiling}
@@ -122,14 +232,15 @@ function showShape(
     segments: Segment[],
     hash: string,
     origin: Coord,
-    ids: string[]
+    ids: string[],
+    size: number = 50
 ) {
     const { h, w, x0, y0 } = segmentsBounds(segments);
     return (
         <div key={hash} className="p-2 relative">
             <svg
-                width={(50 / h) * w}
-                height={50}
+                width={(size / h) * w}
+                height={size}
                 viewBox={`${x0.toFixed(2)} ${y0.toFixed(2)} ${w.toFixed(
                     2
                 )} ${h.toFixed(2)}`}
@@ -144,7 +255,7 @@ function showShape(
                         .join("")}Z`}
                 />
             </svg>
-            {ids.length > 1 ? (
+            {/* {ids.length > 1 ? (
                 <div
                     className="absolute"
                     style={{
@@ -162,7 +273,7 @@ function showShape(
                 </div>
             ) : (
                 ""
-            )}
+            )} */}
         </div>
     );
 }

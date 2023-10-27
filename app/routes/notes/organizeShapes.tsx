@@ -157,6 +157,7 @@ export const organizeShapes = (
 
     const shapesAndSuch: {
         [hash: string]: {
+            hash: string;
             shape: BarePath;
             tilings: string[];
             concavities: number;
@@ -185,6 +186,7 @@ export const organizeShapes = (
 
             rotated[first] = first;
             shapesAndSuch[first] = {
+                hash: first,
                 shape: maybeFlip(verticalize(norm)),
                 tilings: [tiling.id],
                 concavities,
@@ -220,7 +222,7 @@ export const organizeShapes = (
 
     console.log("we did an org");
     console.log(fullOrg);
-    return fullOrg;
+    return { fullOrg, byHash: shapesAndSuch };
 };
 function toPattern(lengths: number[]): [number, string] {
     const fx = lengths.map((l): [number, string] => [l, l.toFixed(2)]);
