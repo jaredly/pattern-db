@@ -3,6 +3,7 @@
 
 - [ ] click a pattern to see the matching images
 - [ ] add the ability to narrow down patterns by stuff
+  - dropdowns based on the number of sides of a shape
 
 
 # OK NOW

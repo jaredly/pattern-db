@@ -29,7 +29,7 @@ export const ViewTiling = ({
         <div className="flex flex-col items-stretch p-4">
             <a // className="p-3 text-center"
                 className="hover:bg-deep-orange-500 cursor-pointer px-4 py-2"
-                href={`notes/${tiling.id}`}
+                href={`/notes/${tiling.id}`}
             >
                 {tiling.hash.slice(0, 10)} ({count ?? 0})
             </a>

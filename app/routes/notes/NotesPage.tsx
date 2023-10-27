@@ -10,8 +10,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Pattern } from "./Pattern";
 import { PatternSelected, compareTags, lsText, customStyle } from "./route";
 import { getTagMap } from "./getTagMap";
-import { ViewTiling } from "./ViewTiling";
 import { loader } from "./loader";
+import { ViewTilings } from "./ViewTilings";
 
 export default function NotesPage() {
     const { patterns, tags, links, tilings } = useLoaderData<typeof loader>();
@@ -90,15 +90,7 @@ export default function NotesPage() {
             </header>
 
             <main className="flex flex-row flex-1 bg-white min-h-0">
-                <div className="w-64 min-w-max overflow-scroll">
-                    {tilings.map((tiling) => (
-                        <ViewTiling
-                            key={tiling.id}
-                            tiling={tiling}
-                            count={tilingCounts[tiling.hash]}
-                        />
-                    ))}
-                </div>
+                {ViewTilings({ tilings, tilingCounts })}
                 <div className="flex flex-col overflow-scroll">
                     <Tags submit={submit} tags={tags} tagSel={tagSel} />
                     <div className="flex flex-wrap">
