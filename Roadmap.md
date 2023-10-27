@@ -6,6 +6,13 @@
   - yeah gotta have a rotating hash map for the angles, and sides?
 - [ ] and then, let's orient everything in roughly the same way? Like vertically oriented.
 
+
+SORTTING by
+- [ ] number of sides/points ASC
+- [ ] number of concavities ASC
+- [ ] side length & angle pattern classes
+
+
 Sooooo like for sides:
 - First: sort the side lengths.
   - THEN replace the sides with the *index* into that sorted list

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ViewTiling } from "./ViewTiling";
-import { BarePath, State } from "geometricart/src/types";
+import { BarePath, Segment, State } from "geometricart/src/types";
 import {
     angleTo,
     applyMatrices,
@@ -28,6 +28,14 @@ const rotateShape = (shape: BarePath, idx: number): BarePath => {
             .slice(idx)
             .concat(shape.segments.slice(0, idx)),
     };
+};
+
+const maybeFlip = (shape: BarePath): BarePath => {
+    const bounds = segmentsBounds(shape.segments);
+    if (bounds.w <= bounds.h) {
+        return shape;
+    }
+    return transformBarePath(shape, [rotationMatrix(Math.PI / 2)]);
 };
 
 const verticalize = (shape: BarePath): BarePath => {
@@ -74,10 +82,7 @@ const verticalize = (shape: BarePath): BarePath => {
         // scale so the first segment has length 1
         scaleMatrix(1 / best[2], 1 / best[2]),
     ];
-    return {
-        origin: applyMatrices(shape.origin, tx),
-        segments: shape.segments.map((seg) => transformSegment(seg, tx)),
-    };
+    return transformBarePath(shape, tx);
 };
 
 const normalizeShape = (shape: BarePath): BarePath => {
@@ -91,10 +96,7 @@ const normalizeShape = (shape: BarePath): BarePath => {
         // scale so the first segment has length 1
         scaleMatrix(1 / len, 1 / len),
     ];
-    return {
-        origin: applyMatrices(shape.origin, tx),
-        segments: shape.segments.map((seg) => transformSegment(seg, tx)),
-    };
+    return transformBarePath(shape, tx);
 };
 
 const shapeKey = (segments: BarePath["segments"]) =>
@@ -138,7 +140,7 @@ const organizeShapes = (
 
             rotated[first] = first;
             shapesAndSuch[num][first] = {
-                shape: verticalize(norm),
+                shape: maybeFlip(verticalize(norm)),
                 tilings: [tiling.id],
             };
 
@@ -175,6 +177,16 @@ const organizeShapes = (
     return shapesAndSuch;
 };
 
+function transformBarePath(
+    shape: BarePath,
+    tx: import("/Users/jared/clone/art/geometricart/src/rendering/getMirrorTransforms").Matrix[]
+): BarePath {
+    return {
+        origin: applyMatrices(shape.origin, tx),
+        segments: shape.segments.map((seg) => transformSegment(seg, tx)),
+    };
+}
+
 export function ViewTilings({
     tilings,
     tilingCounts,
@@ -204,27 +216,7 @@ export function ViewTilings({
                             shape: { origin, segments },
                             tilings: ids,
                         } = org[+k][hash];
-                        const pts = segments.map((s) => s.to);
-                        const xs = pts.map((p) => p.x);
-                        const ys = pts.map((p) => p.y);
-                        const x0 = xs.reduce(
-                            (a, b) => Math.min(a, b),
-                            Infinity
-                        );
-                        const x1 = xs.reduce(
-                            (a, b) => Math.max(a, b),
-                            -Infinity
-                        );
-                        const y0 = ys.reduce(
-                            (a, b) => Math.min(a, b),
-                            Infinity
-                        );
-                        const y1 = ys.reduce(
-                            (a, b) => Math.max(a, b),
-                            -Infinity
-                        );
-                        const h = y1 - y0;
-                        const w = x1 - x0;
+                        const { h, w, x0, y0 } = segmentsBounds(segments);
                         return (
                             <div key={hash} className="p-2 relative">
                                 <svg
@@ -281,4 +273,17 @@ export function ViewTilings({
             ))}
         </div>
     );
+}
+
+function segmentsBounds(segments: Segment[]) {
+    const pts = segments.map((s) => s.to);
+    const xs = pts.map((p) => p.x);
+    const ys = pts.map((p) => p.y);
+    const x0 = xs.reduce((a, b) => Math.min(a, b), Infinity);
+    const x1 = xs.reduce((a, b) => Math.max(a, b), -Infinity);
+    const y0 = ys.reduce((a, b) => Math.min(a, b), Infinity);
+    const y1 = ys.reduce((a, b) => Math.max(a, b), -Infinity);
+    const h = y1 - y0;
+    const w = x1 - x0;
+    return { h, w, x0, y0 };
 }
