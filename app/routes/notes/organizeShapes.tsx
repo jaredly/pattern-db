@@ -220,8 +220,6 @@ export const organizeShapes = (
         pc.push(shape);
     });
 
-    console.log("we did an org");
-    console.log(fullOrg);
     return { fullOrg, byHash: shapesAndSuch };
 };
 function toPattern(lengths: number[]): [number, string] {

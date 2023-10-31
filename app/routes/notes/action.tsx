@@ -9,6 +9,12 @@ export const action = async ({ request }: ActionArgs) => {
 
     const formData = await parseMultipartFormData(request, uploadImages);
 
+    const del = formData.get("delete-tiling") as string;
+    if (del) {
+        await prisma.imageTiling.delete({ where: { id: del } });
+        return json({ errors: null }, { status: 200 });
+    }
+
     const tiling = formData.get("add-tiling") as string;
     if (tiling) {
         const ids = formData.getAll("pattern") as string[];

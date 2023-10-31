@@ -35,6 +35,7 @@ export const loader = async ({ request }: LoaderArgs) => {
                                     y: true,
                                     tiling: {
                                         select: {
+                                            id: true,
                                             hash: true,
                                             json: true,
                                         },

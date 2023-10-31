@@ -7,9 +7,13 @@ import { LoaderReturn, handleNegZero } from "./route";
 export const ViewTiling = ({
     tiling,
     count,
+    onToggle,
+    selected,
 }: {
     tiling: LoaderReturn["tilings"][0];
     count?: number;
+    onToggle: (selected: boolean) => void;
+    selected: boolean;
 }) => {
     const data: Tiling = useMemo(() => JSON.parse(tiling.json), [tiling.json]);
     const ok = useMemo(() => {
@@ -27,12 +31,18 @@ export const ViewTiling = ({
     // const submit = useSubmit();
     return (
         <div className="flex flex-col items-stretch p-4">
-            <a // className="p-3 text-center"
-                className="hover:bg-deep-orange-500 cursor-pointer px-4 py-2"
-                href={`/notes/${tiling.id}`}
+            <button
+                className={
+                    "hover:bg-deep-orange-500 cursor-pointer px-4 py-2" +
+                    (selected ? " bg-deep-orange-500" : "")
+                }
+                // href={`/notes/${tiling.id}`}
+                onClick={() => {
+                    onToggle(!selected);
+                }}
             >
                 {tiling.hash.slice(0, 10)} ({count ?? 0})
-            </a>
+            </button>
             <button
                 form="patterns"
                 name="add-tiling"
@@ -74,6 +84,14 @@ export const ViewTiling = ({
                     );
                 })}
             </svg>
+            <button
+                form="patterns"
+                name="delete-tiling"
+                value={tiling.id}
+                className="hover:bg-deep-orange-500 cursor-pointer px-4 py-2"
+            >
+                Delete tiling
+            </button>
         </div>
     );
 };

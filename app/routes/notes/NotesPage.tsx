@@ -68,6 +68,12 @@ export default function NotesPage() {
         return counts;
     }, [patterns]);
 
+    const [selectedTiling, setSelectedTiling] = useState(null as null | string);
+
+    const patterened = patterns.filter((f) =>
+        f.images.some((i) => i.imageTilings.length)
+    );
+
     return (
         <div className="flex h-full min-h-screen flex-col">
             <header className="flex items-center justify-between bg-blue-gray-800 p-4 text-white">
@@ -90,7 +96,12 @@ export default function NotesPage() {
             </header>
 
             <main className="flex flex-row flex-1 bg-white min-h-0">
-                {ViewTilings({ tilings, tilingCounts })}
+                <ViewTilings
+                    tilings={tilings}
+                    tilingCounts={tilingCounts}
+                    selectedTiling={selectedTiling}
+                    setSelectedTiling={setSelectedTiling}
+                />
                 <div className="flex flex-col overflow-scroll">
                     <Tags submit={submit} tags={tags} tagSel={tagSel} />
                     <div className="flex flex-wrap">
@@ -162,14 +173,27 @@ export default function NotesPage() {
                             }}
                         >
                             <input type="hidden" name="intent" value="tags" />
+                            {patterened.length +
+                                "/" +
+                                patterns.length +
+                                " patterned images"}
                             {patterns
                                 .slice()
                                 .reverse()
                                 .filter(
-                                    (p) =>
-                                        !p.images.some(
-                                            (i) => i.imageTilings.length
-                                        )
+                                    selectedTiling
+                                        ? (p) =>
+                                              p.images.some((i) =>
+                                                  i.imageTilings.some(
+                                                      (it) =>
+                                                          it.tiling.id ===
+                                                          selectedTiling
+                                                  )
+                                              )
+                                        : (p) =>
+                                              !p.images.some(
+                                                  (i) => i.imageTilings.length
+                                              )
                                 )
                                 .map((pattern) => (
                                     <Pattern
