@@ -2,9 +2,14 @@
 9/43/10/52/36
 
 - [x] detect more dups pls
-- [ ] also, I'd like to sort things, organize by ... order of angles ... and ~ranking of equal sides? idk
+- [x] also, I'd like to sort things, organize by ... order of angles ... and ~ranking of equal sides? idk
   - yeah gotta have a rotating hash map for the angles, and sides?
-- [ ] and then, let's orient everything in roughly the same way? Like vertically oriented.
+- [x] and then, let's orient everything in roughly the same way? Like vertically oriented.
+
+- [ ] so, cb96afc94b isn't producing the 10-pointed star? ??? ??
+  - I need to be able to show the shapes for a given tiling
+  - and figure out what is going onnnn
+
 
 
 SORTTING by
