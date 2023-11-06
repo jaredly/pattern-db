@@ -14,8 +14,8 @@
 
 SORTTING by
 - [x] number of sides/points ASC
-- [ ] number of concavities ASC
-- [ ] side length & angle pattern classes
+- [x] number of concavities ASC
+- [x] side length & angle pattern classes
 
 
 Sooooo like for sides:
