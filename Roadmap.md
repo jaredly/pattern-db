@@ -1,3 +1,36 @@
+3/4 /5 /6 /7
+9/43/10/52/36
+
+- [x] detect more dups pls
+- [x] also, I'd like to sort things, organize by ... order of angles ... and ~ranking of equal sides? idk
+  - yeah gotta have a rotating hash map for the angles, and sides?
+- [x] and then, let's orient everything in roughly the same way? Like vertically oriented.
+
+- [ ] so, cb96afc94b isn't producing the 10-pointed star? ??? ??
+  - I need to be able to show the shapes for a given tiling
+  - and figure out what is going onnnn
+
+
+
+SORTTING by
+- [x] number of sides/points ASC
+- [x] number of concavities ASC
+- [x] side length & angle pattern classes
+
+
+Sooooo like for sides:
+- First: sort the side lengths.
+  - THEN replace the sides with the *index* into that sorted list
+  - yeah, that sounds awesome.
+- Can we do the same for angles? Seems like it honestly.
+
+# Ok so
+
+- [ ] click a pattern to see the matching images
+- [ ] add the ability to narrow down patterns by stuff
+  - dropdowns based on the number of sides of a shape
+
+
 
 # OK NOW
 that i have a bunch of classifications
@@ -6,6 +39,9 @@ like do I have a tiling for this oneee
 
 Sooo we're saying that .. we have tilings
 and like they can be.
+
+- [x] assign a tiling to a new image thx
+= [ ] ditchthe pattern idea I think? images <-> tilings atm
 
 # Boo
 
