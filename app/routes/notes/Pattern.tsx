@@ -86,9 +86,15 @@ export function Pattern({ pattern }: { pattern: PatternSelected }) {
                     <div className="h-32 relative">
                         <div>{image.date}</div>
                         <div>{image.location}</div>
-                        <div className="break-all">
-                            {image.source?.slice(0, 50)}
-                        </div>
+                        {image.source ? (
+                            <div className="break-all">
+                                <a href={image.source} target="_blank">
+                                    {image.source.slice(0, 50)}
+                                </a>
+                            </div>
+                        ) : (
+                            "no source"
+                        )}
                         <div className="absolute bottom-0 left-0 right-0 flex flex-wrap text-xs">
                             {pattern.tags.map((tag) => (
                                 <div

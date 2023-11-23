@@ -1,3 +1,8 @@
+
+- [ ] filter by aspect ratio of the repeating whatsit. (or hex)
+- [ ] also I need to be able to indicate that ... the
+
+
 3/4 /5 /6 /7
 9/43/10/52/36
 
