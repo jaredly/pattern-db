@@ -12,6 +12,7 @@ import { PatternSelected, compareTags, lsText, customStyle } from "./route";
 import { getTagMap } from "./getTagMap";
 import { loader } from "./loader";
 import { ViewTilings } from "./ViewTilings";
+import { SerializeFrom, TypedResponse } from "@remix-run/node";
 
 export default function NotesPage() {
     const { patterns, tags, links, tilings } = useLoaderData<typeof loader>();
@@ -24,6 +25,14 @@ export default function NotesPage() {
         patterns.forEach((p) => (map[p.id] = p));
         return map;
     }, [patterns]);
+
+    const [tick, setTick] = useState(0);
+
+    const sortedPatterns = useMemo(() => {
+        return tick > 0
+            ? sortPatterns(patterns.slice())
+            : patterns.slice().reverse();
+    }, [patterns, tick]);
 
     useEffect(() => {
         if (pform.current) {
@@ -173,13 +182,20 @@ export default function NotesPage() {
                             }}
                         >
                             <input type="hidden" name="intent" value="tags" />
-                            {patterened.length +
-                                "/" +
-                                patterns.length +
-                                " patterned images"}
-                            {patterns
-                                .slice()
-                                .reverse()
+                            <div>
+                                {patterened.length +
+                                    "/" +
+                                    patterns.length +
+                                    " patterned images"}
+                                <button
+                                    style={{ display: "block" }}
+                                    type="button"
+                                    onClick={() => setTick(tick + 1)}
+                                >
+                                    Randomize
+                                </button>
+                            </div>
+                            {sortedPatterns
                                 .filter(
                                     selectedTiling
                                         ? (p) =>
@@ -208,6 +224,14 @@ export default function NotesPage() {
         </div>
     );
 }
+
+const sortPatterns = (p: SerializeFrom<typeof loader>["patterns"]) => {
+    return p
+        .map((_, i) => [Math.random(), i])
+        .sort((a, b) => a[0] - b[0])
+        .map(([_, i]) => p[i]);
+    // return p.reverse()
+};
 
 const Tags = ({
     submit,
