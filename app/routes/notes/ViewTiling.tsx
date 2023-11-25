@@ -22,7 +22,7 @@ export const ViewTiling = ({
         const p2 = pts.map((pt) => g2.applyMatrices(pt, tx));
         const full = geo.eigenShapesToLines(
             data.cache.segments.map((s) => [s.prev, s.segment.to]),
-            data.shape.type === "right-triangle" && data.shape.rotateHypotenuse,
+            data.shape,
             g2.applyMatrices(pts[2], tx),
             p2
         );

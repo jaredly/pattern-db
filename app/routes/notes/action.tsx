@@ -4,6 +4,9 @@ import { prisma } from "~/db.server";
 import { parseMultipartFormData, uploadImages } from "~/models/upload.server";
 import { requireUserId } from "~/session.server";
 
+/**
+ * Actions on the main "patterns" page
+ */
 export const action = async ({ request }: ActionArgs) => {
     const userId = await requireUserId(request);
 
@@ -11,7 +14,8 @@ export const action = async ({ request }: ActionArgs) => {
 
     const del = formData.get("delete-tiling") as string;
     if (del) {
-        await prisma.imageTiling.delete({ where: { id: del } });
+        await prisma.tiling.delete({ where: { id: del } });
+        // await prisma.imageTiling.delete({ where: { id: del } });
         return json({ errors: null }, { status: 200 });
     }
 

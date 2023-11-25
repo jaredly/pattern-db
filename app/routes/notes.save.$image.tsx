@@ -6,6 +6,9 @@ import invariant from "tiny-invariant";
 import { prisma } from "~/db.server";
 import { State } from "geometricart/src/types";
 
+/**
+ * The load & save target for the geometricart design tool
+ */
 export const loader = async ({ params }: LoaderArgs) => {
     invariant(params.image, "image not found");
 
@@ -34,6 +37,7 @@ export const action = async ({ params, request }: ActionArgs) => {
             url: true,
             imageTilings: {
                 select: {
+                    id: true,
                     tiling: {
                         select: {
                             hash: true,
@@ -50,6 +54,29 @@ export const action = async ({ params, request }: ActionArgs) => {
     writeFileSync(path, JSON.stringify(data));
 
     const hashes = image.imageTilings.map((it) => it.tiling.hash);
+
+    const toSave = Object.values(data.tilings).map((v) => v.cache.hash);
+
+    const toRemove = image.imageTilings.filter(
+        (it) => !toSave.includes(it.tiling.hash)
+    );
+    if (toRemove.length) {
+        for (let it of toRemove) {
+            await prisma.imageTiling.delete({
+                where: {
+                    id: it.id,
+                },
+            });
+        }
+        // await prisma.image.update({
+        //     where: { id: params.image },
+        //     data: {
+        //         imageTilings: {
+        //             disconnect: toRemove.map((it) => ({ id: it.id })),
+        //         },
+        //     },
+        // });
+    }
 
     for (let tiling of Object.values(data.tilings)) {
         const found = await prisma.tiling.findFirst({
