@@ -303,7 +303,7 @@ export const matchesAspectRatio = (shape: ShapeKind, data: Tiling) => {
         if (closeEnough(hyp, one * 2) || closeEnough(hyp, two * 2)) {
             return shape === "hex";
         }
-        return shape === "rect";
+        return shape === "other";
     }
     if (data.shape.type === "isocelese") {
         const one = dist(data.shape.first, data.shape.second);

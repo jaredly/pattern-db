@@ -1,5 +1,6 @@
 import { BarePath, State } from "geometricart/src/types";
 import {
+    Matrix,
     angleTo,
     applyMatrices,
     dist,
@@ -15,6 +16,10 @@ import { angleBetween } from "geometricart/src/rendering/findNextSegments";
 import { addPrevsToSegments } from "geometricart/src/rendering/segmentsToNonIntersectingSegments";
 import { ensureClockwise } from "geometricart/src/rendering/pathToPoints";
 import { segmentsBounds } from "./ViewTilings";
+import {
+    consoleSvg,
+    renderSegments,
+} from "geometricart/src/animation/renderSegments";
 
 const rotateShape = (shape: BarePath, idx: number): BarePath => {
     if (idx === 0) return shape;
@@ -171,6 +176,11 @@ export const organizeShapes = (
 
     for (let tiling of datas) {
         for (let shape of tiling.data.cache.shapes) {
+            const segs = ensureClockwise(shape.segments);
+            if (segs !== shape.segments) {
+                shape.segments = segs;
+                shape.origin = segs[segs.length - 1].to;
+            }
             const norm = normalizeShape(shape);
             const first = shapeKey(norm.segments);
 
@@ -220,6 +230,13 @@ export const organizeShapes = (
         pc.push(shape);
     });
 
+    // console.log("w17wenty", fullOrg[17]);
+    // Object.values(fullOrg[17][8]).forEach((ok) => {
+    //     const sss = renderSegments(addPrevsToSegments(ok[0].shape.segments));
+    //     consoleSvg(sss);
+    //     console.log(sss);
+    // });
+
     return { fullOrg, byHash: shapesAndSuch };
 };
 function toPattern(lengths: number[]): [number, string] {
@@ -233,10 +250,7 @@ function toPattern(lengths: number[]): [number, string] {
     const positions = fx.map((l) => sorted.indexOf(l[1]));
     return [sorted.length, positions.map((m) => m.toString()).join(",")];
 }
-function transformBarePath(
-    shape: BarePath,
-    tx: import("/Users/jared/clone/art/geometricart/src/rendering/getMirrorTransforms").Matrix[]
-): BarePath {
+function transformBarePath(shape: BarePath, tx: Matrix[]): BarePath {
     return {
         origin: applyMatrices(shape.origin, tx),
         segments: shape.segments.map((seg) => transformSegment(seg, tx)),
