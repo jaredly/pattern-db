@@ -10,10 +10,8 @@ export default NotesPage;
 export { action } from "./action";
 export { loader } from "./loader";
 
-export const tilingSort = (o: { json: string }, t: { json: string }) => {
-    const on: Tiling = JSON.parse(o.json);
-    const tn: Tiling = JSON.parse(t.json);
-    return on.cache.segments.length - tn.cache.segments.length;
+export const tilingSort = (o: { data: Tiling }, t: { data: Tiling }) => {
+    return o.data.cache.segments.length - t.data.cache.segments.length;
 };
 
 export type LoaderReturn = Awaited<

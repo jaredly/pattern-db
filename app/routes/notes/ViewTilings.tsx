@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ViewTiling } from "./ViewTiling";
-import { Coord, Segment } from "geometricart/src/types";
+import { Coord, Segment, Tiling } from "geometricart/src/types";
 import { coordKey } from "geometricart/src/rendering/coordKey";
 import { segmentKey } from "geometricart/src/rendering/segmentKey";
 import { organizeShapes } from "./organizeShapes";
@@ -12,24 +12,83 @@ import {
     MenuItem,
     Button,
 } from "@material-tailwind/react";
+import { dist } from "geometricart/src/rendering/getMirrorTransforms";
+import { closeEnough } from "geometricart/src/rendering/epsilonToZero";
 
-const OrgMenu = ({
+export type Filter =
+    | {
+          type: "shape";
+          tilings: string[];
+          shape: string;
+      }
+    | { type: "ratio"; shape: ShapeKind };
+
+export const OrgMenu = ({
     tilings,
     filter,
     setFilter,
 }: {
     tilings: { hash: string; json: string; id: string }[];
-    filter: { tilings: string[]; shape: string }[];
-    setFilter: (f: { tilings: string[]; shape: string }[]) => void;
+    filter: Filter[];
+    setFilter: (f: Filter[]) => void;
 }) => {
     const { fullOrg: org, byHash } = useMemo(
         () => organizeShapes(tilings),
         [tilings]
     );
+    console.log("render", filter);
 
     return (
         <div>
             <div className="flex flex-wrap p-1">
+                <Menu>
+                    <MenuHandler>
+                        <Button>Filter by aspect ratio</Button>
+                    </MenuHandler>
+                    <MenuList>
+                        <MenuItem
+                            onClick={() => {
+                                setFilter([
+                                    ...filter,
+                                    { type: "ratio", shape: "square" },
+                                ]);
+                            }}
+                        >
+                            Square
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                setFilter([
+                                    ...filter,
+                                    { type: "ratio", shape: "rect" },
+                                ]);
+                            }}
+                        >
+                            Rect
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                setFilter([
+                                    ...filter,
+                                    { type: "ratio", shape: "hex" },
+                                ]);
+                            }}
+                        >
+                            Hex
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                setFilter([
+                                    ...filter,
+                                    { type: "ratio", shape: "other" },
+                                ]);
+                            }}
+                        >
+                            Other
+                        </MenuItem>
+                    </MenuList>
+                </Menu>
+
                 <Menu>
                     <MenuHandler>
                         <Button>Filter by shape</Button>
@@ -159,6 +218,7 @@ const OrgMenu = ({
                                                                                                   )
                                                                                                 : filter.concat(
                                                                                                       {
+                                                                                                          type: "shape",
                                                                                                           tilings:
                                                                                                               shape.tilings,
                                                                                                           shape: shape.hash,
@@ -203,15 +263,19 @@ const OrgMenu = ({
                                     filter.filter((m) => m.shape !== f.shape)
                                 );
                             }}
-                            className="p-0 bg-transparent"
+                            className={
+                                f.type === "shape" ? "p-0 bg-transparent" : ""
+                            }
                         >
-                            {showShape(
-                                byHash[f.shape].shape.segments,
-                                f.shape,
-                                byHash[f.shape].shape.origin,
-                                byHash[f.shape].tilings,
-                                35
-                            )}
+                            {f.type === "ratio"
+                                ? f.shape
+                                : showShape(
+                                      byHash[f.shape].shape.segments,
+                                      f.shape,
+                                      byHash[f.shape].shape.origin,
+                                      byHash[f.shape].tilings,
+                                      35
+                                  )}
                         </Button>
                     </div>
                 ))}
@@ -220,30 +284,57 @@ const OrgMenu = ({
     );
 };
 
+export type ShapeKind = "rect" | "square" | "hex" | "other";
+
+export const matchesAspectRatio = (shape: ShapeKind, data: Tiling) => {
+    if (data.shape.type === "parallellogram") {
+        return shape === "rect";
+    }
+    if (data.shape.type === "right-triangle") {
+        const one = dist(data.shape.start, data.shape.corner);
+        const two = dist(data.shape.end, data.shape.corner);
+        const hyp = dist(data.shape.start, data.shape.end);
+        if (closeEnough(one, two)) {
+            return shape === "square";
+        }
+        if (data.shape.rotateHypotenuse) {
+            return shape === "rect";
+        }
+        if (closeEnough(hyp, one * 2) || closeEnough(hyp, two * 2)) {
+            return shape === "hex";
+        }
+        return shape === "rect";
+    }
+    if (data.shape.type === "isocelese") {
+        const one = dist(data.shape.first, data.shape.second);
+        const two = dist(data.shape.third, data.shape.second);
+        const three = dist(data.shape.first, data.shape.third);
+        if (closeEnough(one, two) && closeEnough(one, three)) {
+            return shape === "hex";
+        }
+    }
+    return shape === "other";
+};
+
 export function ViewTilings({
     tilings,
     tilingCounts,
     selectedTiling,
     setSelectedTiling,
 }: {
-    tilings: { hash: string; json: string; id: string }[];
+    tilings: { hash: string; json: string; id: string; data: Tiling }[];
     tilingCounts: Record<string, number>;
     selectedTiling: null | string;
     setSelectedTiling: (v: null | string) => void;
 }) {
-    const [filter, setFilter] = useState(
-        [] as {
-            tilings: string[];
-            shape: string;
-        }[]
-    );
+    const [filters, setFilter] = useState([] as Filter[]);
 
     return (
         <div className="w-64 min-w-max overflow-scroll">
-            <OrgMenu tilings={tilings} filter={filter} setFilter={setFilter} />
-            {(filter.length
-                ? tilings.filter((t) =>
-                      filter.some((f) => f.tilings.includes(t.id))
+            <OrgMenu tilings={tilings} filter={filters} setFilter={setFilter} />
+            {(filters.length
+                ? tilings.filter((tiling) =>
+                      filters.some((filter) => matchesFilter(filter, tiling))
                   )
                 : tilings
             ).map((tiling) => (
@@ -259,6 +350,15 @@ export function ViewTilings({
             ))}
         </div>
     );
+}
+
+export function matchesFilter(
+    filter: Filter,
+    tiling: { hash: string; json: string; id: string; data: Tiling }
+): unknown {
+    return filter.type === "shape"
+        ? filter.tilings.includes(tiling.id)
+        : matchesAspectRatio(filter.shape, tiling.data);
 }
 
 function showShape(

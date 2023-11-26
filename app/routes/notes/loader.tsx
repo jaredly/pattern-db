@@ -3,6 +3,7 @@ import { json } from "@remix-run/node";
 import { prisma } from "~/db.server";
 import { existsSync } from "fs";
 import { tilingSort } from "./route";
+import { Tiling } from "geometricart/src/types";
 
 export const loader = async ({ request }: LoaderArgs) => {
     return json({
@@ -14,7 +15,9 @@ export const loader = async ({ request }: LoaderArgs) => {
                     id: true,
                 },
             })
-        ).sort(tilingSort),
+        )
+            .map((t) => ({ ...t, data: JSON.parse(t.json) as Tiling }))
+            .sort(tilingSort),
         patterns: (
             await prisma.pattern.findMany({
                 select: {

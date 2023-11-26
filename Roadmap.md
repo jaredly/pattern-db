@@ -1,4 +1,12 @@
 
+
+
+- [ ] filter by [shape] should really be *AND*, but allow you to select the super-group (which would do [or] within it)
+- [ ] then make a website that's like "all the patterns" or something
+  - maybe it could use github as its source of truth. yeah that makes sense.
+
+
+
 - [ ] filter by aspect ratio of the repeating whatsit. (or hex)
 - [ ] also I need to be able to indicate that ... the
 
