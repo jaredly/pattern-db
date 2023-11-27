@@ -9,8 +9,9 @@ import {
 } from "./notes/ViewTilings";
 import { Form, Link, useLoaderData } from "@remix-run/react";
 import { useMemo, useState } from "react";
-import { ViewTiling } from "./notes/ViewTiling";
+import { ViewTiling, getSvgData, tilingSvg } from "./notes/ViewTiling";
 import { Tiling } from "geometricart/src/types";
+import { LoaderReturn } from "./notes/route";
 
 export const loader = async ({ request }: LoaderArgs) => {
     return json({
@@ -29,6 +30,16 @@ export const loader = async ({ request }: LoaderArgs) => {
             })
         ).map((t) => ({ ...t, data: JSON.parse(t.json) as Tiling })),
     });
+};
+
+export const SimpleTiling = ({
+    tiling,
+}: {
+    tiling: LoaderReturn["tilings"][0];
+}) => {
+    const { bounds, lines } = useMemo(() => getSvgData(tiling), [tiling]);
+
+    return tilingSvg(bounds, lines);
 };
 
 export default function Tilings() {
@@ -84,13 +95,7 @@ export default function Tilings() {
                                 b.data.cache.segments.length
                         )
                         .map((tiling) => (
-                            <ViewTiling
-                                key={tiling.id}
-                                tiling={tiling}
-                                count={tilingCounts[tiling.hash]}
-                                selected={false}
-                                onToggle={(sel) => {}}
-                            />
+                            <SimpleTiling key={tiling.id} tiling={tiling} />
                         ))}
                 </div>
             </div>
