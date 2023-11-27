@@ -43,7 +43,7 @@ export const OrgMenu = ({
             <div className="flex flex-wrap p-1">
                 <Menu>
                     <MenuHandler>
-                        <Button>Filter by aspect ratio</Button>
+                        <Button>Aspect ratio</Button>
                     </MenuHandler>
                     <MenuList>
                         <MenuItem
