@@ -32,6 +32,9 @@ export const loader = async ({ request }: LoaderArgs) => {
     });
 };
 
+const PREFIX = "<!-- TILING:";
+const SUFFIX = "-->";
+
 export const SimpleTiling = ({
     tiling,
 }: {
@@ -39,7 +42,26 @@ export const SimpleTiling = ({
 }) => {
     const { bounds, lines } = useMemo(() => getSvgData(tiling), [tiling]);
 
-    return tilingSvg(bounds, lines);
+    return (
+        <a
+            href=""
+            download={"tiling-" + tiling.hash + ".svg"}
+            onClick={(evt) => {
+                const txt = evt.currentTarget.innerHTML;
+                const blob = new Blob([txt + PREFIX + tiling.json + SUFFIX], {
+                    type: "image/svg+xml",
+                });
+                const url = URL.createObjectURL(blob);
+                evt.currentTarget.href = url;
+                setTimeout(() => {
+                    evt.currentTarget.href = "";
+                    URL.revokeObjectURL(url);
+                }, 0);
+            }}
+        >
+            {tilingSvg(bounds, lines)}
+        </a>
+    );
 };
 
 export default function Tilings() {
