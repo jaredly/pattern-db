@@ -101,7 +101,14 @@ export function tilingSvg(bounds: Coord[], lines: [Coord, Coord][]) {
                         y1={p1.y.toFixed(2)}
                         y2={p2.y.toFixed(2)}
                         stroke="yellow"
-                        strokeWidth="0.02"
+                        strokeWidth={
+                            0.5 / Math.sqrt(lines.length)
+                            // lines.length > 2000
+                            //     ? 0.002
+                            //     : lines.length > 600
+                            //     ? 0.01
+                            //     : 0.02
+                        }
                     />
                 );
             })}

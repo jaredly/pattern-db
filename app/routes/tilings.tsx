@@ -67,13 +67,13 @@ export const SimpleTiling = ({
 export default function Tilings() {
     const { tilings } = useLoaderData<typeof loader>();
 
-    const tilingCounts = useMemo(() => {
-        const counts: Record<string, number> = {};
-        for (let tiling of tilings) {
-            counts[tiling.id] = tiling.imageTilings.length;
-        }
-        return counts;
-    }, [tilings]);
+    // const tilingCounts = useMemo(() => {
+    //     const counts: Record<string, number> = {};
+    //     for (let tiling of tilings) {
+    //         counts[tiling.id] = tiling.imageTilings.length;
+    //     }
+    //     return counts;
+    // }, [tilings]);
 
     const [filter, setFilter] = useState([] as Filter[]);
 
@@ -117,7 +117,24 @@ export default function Tilings() {
                                 b.data.cache.segments.length
                         )
                         .map((tiling) => (
-                            <SimpleTiling key={tiling.id} tiling={tiling} />
+                            <div
+                                key={tiling.id}
+                                style={{
+                                    position: "relative",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        position: "absolute",
+                                        top: 5,
+                                        left: 5,
+                                        color: "white",
+                                    }}
+                                >
+                                    {tiling.data.cache.segments.length}
+                                </div>
+                                <SimpleTiling tiling={tiling} />
+                            </div>
                         ))}
                 </div>
             </div>
